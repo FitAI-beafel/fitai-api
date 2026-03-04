@@ -68,7 +68,7 @@ export class CreateWorkoutPlan {
               weekDay: workoutDay.weekDay,
               isRest: workoutDay.isRest,
               estimatedDurationInSeconds: workoutDay.estimatedDurationInSeconds,
-              coverImageUrl: workoutDay.coverImageUrl,
+              coverImageUrl: workoutDay.coverImageUrl ?? undefined,
               exercises: {
                 create: workoutDay.exercises.map((exercise) => ({
                   name: exercise.name,
