@@ -3,11 +3,13 @@
 ## Comandos principais
 
 **Instalação de dependências**
+
 - `pnpm install`
   - Instala dependências e roda scripts de build necessários (Prisma, esbuild).
   - `package.json` configura `pnpm.onlyBuiltDependencies` para permitir scripts de `@prisma/engines`, `prisma`, `esbuild`.
 
 **Banco de dados (PostgreSQL via Docker)**
+
 - `docker compose up -d`
   - Sobe container Postgres 16 com DB `fitai-api` em `localhost:5432`.
 - Variáveis de ambiente esperadas (`.env` na raiz):
@@ -15,12 +17,14 @@
   - `DATABASE_URL="postgresql://postgres:password@localhost:5432/fitai-api"`
 
 **Prisma**
+
 - `pnpm prisma db push`
   - Sincroniza o `prisma/schema.prisma` com o banco (cria/atualiza tabelas).
 - `pnpm prisma generate`
   - Gera o Prisma Client em `src/generated/prisma`.
 
 **Servidor de desenvolvimento**
+
 - `pnpm dev`
   - Executa `tsx --watch src/index.ts`.
   - Sobe o servidor Fastify em `http://localhost:8081`.
@@ -30,7 +34,7 @@
 - `GET /`
   - Healthcheck simples: `{ "message": "Hello World" }`.
 - `GET /swagger.json`
-  - OpenAPI da Bootcamp Treinos API.
+  - OpenAPI da Fit.AI API.
 - `GET /docs`
   - UI do Scalar API Reference consumindo `/swagger.json` e OpenAPI da Auth API.
 - `POST /workout-plans`
@@ -70,4 +74,3 @@
   - `cd`, `dir`, `type` (PowerShell/Prompt), mas na prática usamos comandos via pnpm e Docker.
 - Git:
   - `git status`, `git diff`, `git add`, `git commit`, `git log` para versionamento.
-

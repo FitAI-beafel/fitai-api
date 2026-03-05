@@ -1,11 +1,13 @@
 # Projeto fitai-api – propósito e stack
 
 **Propósito**
-- API backend para o bootcamp de treinos ("Bootcamp Treinos API" / Fit.AI).
+
+- API backend para o bootcamp de treinos (Fit.AI).
 - Focada em gestão de planos de treino (`WorkoutPlan`, `WorkoutDay`, `WorkoutExercise`, `WorkoutSession`) e autenticação de usuários.
 - Fornece uma API documentada via Swagger/Scalar (`/swagger.json`, `/docs`) e endpoints de auth via Better Auth.
 
 **Stack principal**
+
 - **Linguagem**: TypeScript (ES modules, `module: "nodenext"`, `target: es2024`).
 - **Runtime**: Node.js 24.x.
 - **Gerenciador de pacotes**: pnpm 10.x (configurado em `package.json`).
@@ -17,6 +19,7 @@
 - **Infra local**: PostgreSQL 16 (Docker, `docker-compose.yml`).
 
 **Entrypoint**
+
 - `src/index.ts`
   - Cria a instância Fastify.
   - Registra Swagger/OpenAPI e o Scalar API Reference (`/docs`).
