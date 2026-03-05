@@ -13,6 +13,8 @@ import {
 import z from "zod";
 
 import { auth } from "./lib/auth.js";
+import { homeRoutes } from "./routes/home.js";
+import { statsRoutes } from "./routes/stats.js";
 import { workoutPlanRoutes } from "./routes/workout-plan.js";
 
 const app = Fastify({
@@ -25,8 +27,8 @@ app.setSerializerCompiler(serializerCompiler);
 await app.register(fastifySwagger, {
   openapi: {
     info: {
-      title: "Bootcamp Treinos API",
-      description: "API para o bootcamp de treinos do FSC",
+      title: "Fit.AI API",
+      description: "API para o Fit.AI do FSC",
       version: "1.0.0",
     },
     servers: [
@@ -49,8 +51,8 @@ await app.register(fastifyApiReference, {
   configuration: {
     sources: [
       {
-        title: "Bootcamp Treinos API",
-        slug: "bootcamp-treinos-api",
+        title: "Fit.AI API",
+        slug: "fitai-api",
         url: "/swagger.json",
       },
       {
@@ -64,7 +66,9 @@ await app.register(fastifyApiReference, {
 
 // RESTful
 // Routes
+await app.register(homeRoutes, { prefix: "/home" });
 await app.register(workoutPlanRoutes, { prefix: "/workout-plans" });
+await app.register(statsRoutes, { prefix: "/stats" });
 
 app.withTypeProvider<ZodTypeProvider>().route({
   method: "GET",
