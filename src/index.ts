@@ -74,6 +74,7 @@ await app.register(meRoutes, { prefix: "/me" });
 await app.register(workoutPlanRoutes, { prefix: "/workout-plans" });
 await app.register(statsRoutes, { prefix: "/stats" });
 
+
 app.withTypeProvider<ZodTypeProvider>().route({
   method: "GET",
   url: "/swagger.json",
