@@ -136,6 +136,10 @@ export class GetHomeData {
     };
   }
 
+  /**
+   * Streak = quantidade de dias consecutivos (de hoje para trás) em que
+   * há treino completado. Dias de descanso não entram na contagem.
+   */
   private async calculateStreak(
     workoutPlanId: string,
     workoutDays: Array<{
@@ -174,7 +178,6 @@ export class GetHomeData {
       }
 
       if (restWeekDays.has(weekDay)) {
-        streak++;
         day = day.subtract(1, "day");
         continue;
       }
