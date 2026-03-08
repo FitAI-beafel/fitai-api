@@ -19,9 +19,6 @@ export const homeRoutes = async (app: FastifyInstance) => {
       params: z.object({
         date: z.iso.date(),
       }),
-      querystring: z.object({
-        timezone: z.string().optional(),
-      }),
       response: {
         200: HomeDataSchema,
         401: ErrorSchema,
@@ -45,7 +42,6 @@ export const homeRoutes = async (app: FastifyInstance) => {
         const result = await getHomeData.execute({
           userId: session.user.id,
           date: request.params.date,
-          timezone: request.query?.timezone,
         });
 
         return reply.status(200).send(result);

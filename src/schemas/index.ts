@@ -24,7 +24,6 @@ export const UpdateWorkoutSessionSchema = z.object({
 export const StatsQuerySchema = z.object({
   from: z.iso.date(),
   to: z.iso.date(),
-  timezone: z.string().optional(),
 });
 
 export const StatsSchema = z.object({
@@ -34,7 +33,7 @@ export const StatsSchema = z.object({
     z.object({
       workoutDayCompleted: z.boolean(),
       workoutDayStarted: z.boolean(),
-    }),
+    })
   ),
   completedWorkoutsCount: z.number(),
   conclusionRate: z.number(),
@@ -61,7 +60,7 @@ export const HomeDataSchema = z.object({
     z.object({
       workoutDayCompleted: z.boolean(),
       workoutDayStarted: z.boolean(),
-    }),
+    })
   ),
 });
 
@@ -81,7 +80,7 @@ export const GetWorkoutDaySchema = z.object({
       sets: z.number(),
       reps: z.number(),
       restTimeInSeconds: z.number(),
-    }),
+    })
   ),
   sessions: z.array(
     z.object({
@@ -89,7 +88,7 @@ export const GetWorkoutDaySchema = z.object({
       workoutDayId: z.uuid(),
       startedAt: z.iso.date().optional(),
       completedAt: z.iso.date().optional(),
-    }),
+    })
   ),
 });
 
@@ -105,7 +104,7 @@ export const GetWorkoutPlanSchema = z.object({
       coverImageUrl: z.url().optional(),
       estimatedDurationInSeconds: z.number(),
       exercisesCount: z.number(),
-    }),
+    })
   ),
 });
 
@@ -137,11 +136,11 @@ export const ListWorkoutPlansSchema = z.array(
             sets: z.number(),
             reps: z.number(),
             restTimeInSeconds: z.number(),
-          }),
+          })
         ),
-      }),
+      })
     ),
-  }),
+  })
 );
 
 export const UpsertUserTrainDataBodySchema = z.object({
@@ -185,8 +184,8 @@ export const WorkoutPlanSchema = z.object({
           sets: z.number().min(1),
           reps: z.number().min(1),
           restTimeInSeconds: z.number().min(1),
-        }),
+        })
       ),
-    }),
+    })
   ),
 });

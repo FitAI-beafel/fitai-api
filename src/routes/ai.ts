@@ -1,4 +1,5 @@
-import { google } from "@ai-sdk/google";
+import { Readable } from "node:stream";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   convertToModelMessages,
   stepCountIs,
@@ -13,6 +14,7 @@ import z from "zod";
 
 import { WeekDay } from "../generated/prisma/enums.js";
 import { auth } from "../lib/auth.js";
+import { env } from "../lib/env.js";
 import { CreateWorkoutPlan } from "../usecases/CreateWorkoutPlan.js";
 import { GetUserTrainData } from "../usecases/GetUserTrainData.js";
 import { ListWorkoutPlans } from "../usecases/ListWorkoutPlans.js";
@@ -94,12 +96,17 @@ export const aiRoutes = async (app: FastifyInstance) => {
       const userId = session.user.id;
       const { messages } = request.body as { messages: UIMessage[] };
 
-      const result = streamText({
-        model: google("gemini-2.0-flash"),
-        system: SYSTEM_PROMPT,
-        messages: await convertToModelMessages(messages),
-        stopWhen: stepCountIs(10),
-        tools: {
+      const google = createGoogleGenerativeAI({
+        apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
+      });
+
+      try {
+        const result = await streamText({
+          model: google("gemini-2.5-flash"),
+          system: SYSTEM_PROMPT,
+          messages: await convertToModelMessages(messages),
+          stopWhen: stepCountIs(10),
+          tools: {
           getUserTrainData: tool({
             description:
               "Busca os dados de treino do usuário autenticado (peso, altura, idade, % gordura). Retorna null se não houver dados cadastrados.",
@@ -204,12 +211,35 @@ export const aiRoutes = async (app: FastifyInstance) => {
             },
           }),
         },
-      });
+        });
 
-      const response = result.toUIMessageStreamResponse();
-      reply.status(response.status);
-      response.headers.forEach((value, key) => reply.header(key, value));
-      return reply.send(response.body);
+        const response = result.toUIMessageStreamResponse();
+        reply.status(response.status);
+        response.headers.forEach((value, key) => reply.header(key, value));
+        const nodeStream = Readable.fromWeb(
+          response.body as import("node:stream/web").ReadableStream<Uint8Array>,
+        );
+        return reply.send(nodeStream);
+      } catch (err: unknown) {
+        const statusCode =
+          typeof (err as { statusCode?: number })?.statusCode === "number"
+            ? (err as { statusCode: number }).statusCode
+            : undefined;
+        const message =
+          err instanceof Error ? err.message : String(err);
+        const isQuotaError =
+          statusCode === 429 ||
+          message.includes("quota") ||
+          message.includes("RESOURCE_EXHAUSTED");
+
+        if (isQuotaError) {
+          return reply.status(503).send({
+            error:
+              "Limite de uso da API Gemini atingido. Tente novamente em alguns minutos ou verifique sua cota em https://ai.dev/rate-limit",
+          });
+        }
+        throw err;
+      }
     },
   });
 };
