@@ -1,10 +1,12 @@
 import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 
 import { NotFoundError } from "../errors/index.js";
 import { prisma } from "../lib/db.js";
 
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const WEEKDAY_MAP: Record<number, string> = {
   0: "SUNDAY",
@@ -20,6 +22,8 @@ interface InputDto {
   userId: string;
   from: string;
   to: string;
+  /** IANA timezone (ex: America/Sao_Paulo). Se não enviado, usa UTC. */
+  timezone?: string;
 }
 
 interface OutputDto {
@@ -38,8 +42,27 @@ interface OutputDto {
 
 export class GetStats {
   async execute(dto: InputDto): Promise<OutputDto> {
-    const fromDate = dayjs.utc(dto.from).startOf("day");
-    const toDate = dayjs.utc(dto.to).endOf("day");
+    let tz = dto.timezone ?? "UTC";
+    let fromDate: dayjs.Dayjs;
+    let toDate: dayjs.Dayjs;
+    try {
+      if (tz === "UTC") {
+        fromDate = dayjs.utc(dto.from).startOf("day");
+        toDate = dayjs.utc(dto.to).endOf("day");
+      } else {
+        fromDate = dayjs.tz(dto.from, tz).startOf("day");
+        toDate = dayjs.tz(dto.to, tz).endOf("day");
+      }
+      if (!fromDate.isValid() || !toDate.isValid()) {
+        tz = "UTC";
+        fromDate = dayjs.utc(dto.from).startOf("day");
+        toDate = dayjs.utc(dto.to).endOf("day");
+      }
+    } catch {
+      tz = "UTC";
+      fromDate = dayjs.utc(dto.from).startOf("day");
+      toDate = dayjs.utc(dto.to).endOf("day");
+    }
 
     const workoutPlan = await prisma.workoutPlan.findFirst({
       where: { userId: dto.userId, isActive: true },
@@ -66,13 +89,18 @@ export class GetStats {
       },
     });
 
+    const sessionDateKey = (startedAt: Date) =>
+      tz === "UTC"
+        ? dayjs.utc(startedAt).format("YYYY-MM-DD")
+        : dayjs.utc(startedAt).tz(tz).format("YYYY-MM-DD");
+
     const consistencyByDay: Record<
       string,
       { workoutDayCompleted: boolean; workoutDayStarted: boolean }
     > = {};
 
     sessions.forEach((session) => {
-      const dateKey = dayjs.utc(session.startedAt).format("YYYY-MM-DD");
+      const dateKey = sessionDateKey(session.startedAt);
 
       if (!consistencyByDay[dateKey]) {
         consistencyByDay[dateKey] = {
@@ -102,7 +130,8 @@ export class GetStats {
     const workoutStreak = await this.calculateStreak(
       workoutPlan.id,
       workoutPlan.workoutDays,
-      toDate
+      toDate,
+      tz
     );
 
     return {
@@ -120,7 +149,8 @@ export class GetStats {
       weekDay: string;
       isRest: boolean;
     }>,
-    currentDate: dayjs.Dayjs
+    currentDate: dayjs.Dayjs,
+    tz: string
   ): Promise<number> {
     const planWeekDays = new Set(workoutDays.map((d) => d.weekDay));
     const restWeekDays = new Set(
@@ -135,8 +165,13 @@ export class GetStats {
       select: { startedAt: true },
     });
 
+    const sessionDateKey = (startedAt: Date) =>
+      tz === "UTC"
+        ? dayjs.utc(startedAt).format("YYYY-MM-DD")
+        : dayjs.utc(startedAt).tz(tz).format("YYYY-MM-DD");
+
     const completedDates = new Set(
-      allSessions.map((s) => dayjs.utc(s.startedAt).format("YYYY-MM-DD"))
+      allSessions.map((s) => sessionDateKey(s.startedAt))
     );
 
     let streak = 0;

@@ -44,6 +44,7 @@ export const statsRoutes = async (app: FastifyInstance) => {
           userId: session.user.id,
           from: request.query.from,
           to: request.query.to,
+          timezone: request.query.timezone,
         });
 
         return reply.status(200).send(result);
