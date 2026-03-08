@@ -87,8 +87,9 @@ export class GetHomeData {
       (day) => day.weekDay === todayWeekDay
     );
 
-    const weekStart = currentDate.day(0).startOf("day");
-    const weekEnd = currentDate.day(6).endOf("day");
+    // Semana segunda–domingo (igual ao ConsistencyTracker no frontend)
+    const weekStart = currentDate.day(1).startOf("day");
+    const weekEnd = weekStart.add(6, "day").endOf("day");
 
     const weekSessions = await prisma.workoutSession.findMany({
       where: {
