@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 
 import { NotFoundError } from "../errors/index.js";
@@ -6,6 +7,7 @@ import { WeekDay } from "../generated/prisma/enums.js";
 import { prisma } from "../lib/db.js";
 
 dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const WEEKDAY_MAP: Record<number, string> = {
   0: "SUNDAY",
@@ -20,6 +22,8 @@ const WEEKDAY_MAP: Record<number, string> = {
 interface InputDto {
   userId: string;
   date: string;
+  /** IANA timezone (ex: America/Sao_Paulo). Se não enviado, usa UTC. */
+  timezone?: string;
 }
 
 interface OutputDto {
@@ -46,7 +50,21 @@ interface OutputDto {
 
 export class GetHomeData {
   async execute(dto: InputDto): Promise<OutputDto> {
-    const currentDate = dayjs.utc(dto.date);
+    let tz = dto.timezone ?? "UTC";
+    let currentDate: dayjs.Dayjs;
+    try {
+      currentDate =
+        tz === "UTC"
+          ? dayjs.utc(dto.date)
+          : dayjs.tz(dto.date, tz);
+      if (!currentDate.isValid()) {
+        tz = "UTC";
+        currentDate = dayjs.utc(dto.date);
+      }
+    } catch {
+      tz = "UTC";
+      currentDate = dayjs.utc(dto.date);
+    }
 
     const workoutPlan = await prisma.workoutPlan.findFirst({
       where: { userId: dto.userId, isActive: true },
@@ -84,6 +102,11 @@ export class GetHomeData {
       },
     });
 
+    const sessionDateKey = (startedAt: Date) =>
+      tz === "UTC"
+        ? dayjs.utc(startedAt).format("YYYY-MM-DD")
+        : dayjs.utc(startedAt).tz(tz).format("YYYY-MM-DD");
+
     const consistencyByDay: Record<
       string,
       { workoutDayCompleted: boolean; workoutDayStarted: boolean }
@@ -94,7 +117,7 @@ export class GetHomeData {
       const dateKey = day.format("YYYY-MM-DD");
 
       const daySessions = weekSessions.filter(
-        (s) => dayjs.utc(s.startedAt).format("YYYY-MM-DD") === dateKey
+        (s) => sessionDateKey(s.startedAt) === dateKey
       );
 
       const workoutDayStarted = daySessions.length > 0;
@@ -111,7 +134,8 @@ export class GetHomeData {
       workoutStreak = await this.calculateStreak(
         workoutPlan.id,
         workoutPlan.workoutDays,
-        currentDate
+        currentDate,
+        tz
       );
     }
 
@@ -147,7 +171,8 @@ export class GetHomeData {
       isRest: boolean;
       sessions: Array<{ startedAt: Date; completedAt: Date | null }>;
     }>,
-    currentDate: dayjs.Dayjs
+    currentDate: dayjs.Dayjs,
+    tz: string
   ): Promise<number> {
     const planWeekDays = new Set(workoutDays.map((d) => d.weekDay));
     const restWeekDays = new Set(
@@ -162,8 +187,13 @@ export class GetHomeData {
       select: { startedAt: true },
     });
 
+    const sessionDateKey = (startedAt: Date) =>
+      tz === "UTC"
+        ? dayjs.utc(startedAt).format("YYYY-MM-DD")
+        : dayjs.utc(startedAt).tz(tz).format("YYYY-MM-DD");
+
     const completedDates = new Set(
-      allSessions.map((s) => dayjs.utc(s.startedAt).format("YYYY-MM-DD"))
+      allSessions.map((s) => sessionDateKey(s.startedAt))
     );
 
     let streak = 0;
